@@ -8,6 +8,7 @@ A RESTful backend API built using Node.js, Express, and MongoDB.
 - Secure API routes
 - File uploads
 - Modular folder structure
+- PayPal payment gateway integration
 
 ## 🛠 Tech Stack
 
@@ -16,6 +17,7 @@ A RESTful backend API built using Node.js, Express, and MongoDB.
 - MongoDB
 - JWT
 - Multer
+- PayPal REST API
 
 ## Project Structure
 
