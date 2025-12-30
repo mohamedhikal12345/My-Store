@@ -12,20 +12,13 @@ const createUserSchema = Joi.object({
   password: Joi.string().min(6).required(),
   deleveryAddress: Joi.string().min(5).required(),
 });
-const generateToken = (data) => {
-  return jwt.sign(data, process.env.JWT_KEY, {
-    expiresIn: "2h",
-  });
-};
 
 router.post("/newUser", async (req, res) => {
   const { name, email, password, deleveryAddress } = req.body;
 
   const joiValidation = createUserSchema.validate(req.body);
   if (joiValidation.error) {
-    return res
-      .status(400)
-      .json({ message: joiValidation.error.details[0].message });
+    return res.status(400).json({ message: joiValidation.error.details[0].message });
   }
 
   const user = await User.findOne({ email: email });
@@ -59,9 +52,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
     if (!user.password) {
-      return res
-        .status(500)
-        .json({ message: "Password not found in database" });
+      return res.status(500).json({ message: "Password not found in database" });
     }
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
@@ -90,5 +81,10 @@ router.get("/", authMiddleware, async (req, res) => {
   const user = await User.findById(req.user._id);
   res.json(user);
 });
+const generateToken = (data) => {
+  return jwt.sign(data, process.env.JWT_KEY);
+};
+//don't forget to make the token expired
+// { expiresIn: "2h",  }
 
 module.exports = router;

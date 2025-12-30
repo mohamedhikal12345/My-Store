@@ -9,6 +9,10 @@ const userRoutes = require("./routes/users");
 const authRoutes = require("./routes/auth");
 const categoryRoutes = require("./routes/categories");
 const productRoutes = require("./routes/products");
+const cartRoutes = require("./routes/cart");
+const orderRoutes = require("./routes/orders");
+const cors = require("cors");
+
 const winston = require("winston");
 const path = require("path");
 
@@ -55,7 +59,7 @@ mongoose
     });
     logger.end();
   });
-
+app.use(cors());
 app.use(express.json());
 app.use("/upload/category", express.static("upload/category"));
 app.use("/upload/products", express.static("upload/products"));
@@ -64,6 +68,9 @@ app.use("/api/user", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/order", orderRoutes);
+
 app.use((error, req, res, next) => {
   console.log("Error middleware is running");
   logger.error(error.message, {

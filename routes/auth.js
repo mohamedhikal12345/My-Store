@@ -4,10 +4,7 @@ const passport = require("passport");
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["email", "profile"] })
-);
+router.get("/google", passport.authenticate("google", { scope: ["email", "profile"] }));
 router.get(
   "/google/callback",
   passport.authenticate("google", {
@@ -23,10 +20,7 @@ router.get(
   }
 );
 
-router.get(
-  "/facebook",
-  passport.authenticate("facebook", { scope: ["public_profile", "email"] })
-);
+router.get("/facebook", passport.authenticate("facebook", { scope: ["public_profile", "email"] }));
 
 router.get(
   "/facebook/callback",
@@ -65,13 +59,9 @@ const handleOAuthCallback = async (profile, providerId) => {
 
     await user.save();
   }
-  const token = jwt.sign(
-    { _id: user._id, name: user.name, role: user.role },
-    process.env.JWT_KEY,
-    {
-      expiresIn: "2h",
-    }
-  );
+  const token = jwt.sign({ _id: user._id, name: user.name, role: user.role }, process.env.JWT_KEY, {
+    expiresIn: "2h",
+  });
   return token;
   // res.json(token);
 };

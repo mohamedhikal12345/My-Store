@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PayPal Payment Testing</title>
+  </head>
+  <body>
+    <h1>Test PayPal Payment Gateway 🤩</h1>
+    <button id="btnPayment">Pay with PayPal</button>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const shippingAddress = "This is your shipping address!";
+        const token =
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OGJjMjYyNDE1NzIxZDIyMmE5MjQ1ZjgiLCJuYW1lIjoiaGlrYWxvbyIsInJvbGUiOiJzZWxsZXIiLCJpYXQiOjE3NjQyNjAzMDd9.fY8imf6o36oIngPKoh47tbAxGDoDJSsx-ykntz1H6nQ";
+
+        const create_order_url = "http://localhost:3000/api/order/paypal/create-order";
+        const capture_order_url = "http://localhost:3000/api/order/paypal/capture-order";
+
+        // Create order
+        document.getElementById("btnPayment").addEventListener("click", async () => {
+          try {
+            const response = await fetch(create_order_url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ shippingAddress }),
+            });
+            const data = await response.json();
+
+            if (data.approvalUrl) {
+              window.location.href = data.approvalUrl;
+            } else {
+              console.error("Order creation failed:", data);
+              alert("Error creating order. Check console for details.");
+            }
+          } catch (error) {
+            console.error("Error creating order:", error);
+            alert("Network error creating order.");
+          }
+        });
+
+        // Handle PayPal redirect after approval/cancel
+        (async () => {
+          const urlParams = new URLSearchParams(window.location.search);
+
+          if (urlParams.get("cancel")) {
+            alert("Payment cancelled by user.");
+            return;
+          }
+
+          if (urlParams.has("token")) {
+            const orderId = urlParams.get("token");
+            console.log("Order returned from PayPal:", orderId);
+
+            try {
+              const captureResponse = await fetch(capture_order_url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ orderId, shippingAddress }),
+              });
+
+              const result = await captureResponse.json();
+
+              if (!captureResponse.ok) {
+                console.error("Capture failed:", result);
+                alert("Payment capture failed. Please check console.");
+                return;
+              }
+
+              if (result.status === "COMPLETED") {
+                alert("✅ Payment successful!");
+              } else {
+                alert(`Payment status: ${result.status || "Unknown"}`);
+              }
+            } catch (error) {
+              console.error("Error capturing order:", error);
+              alert("Error capturing order. Check console.");
+            }
+          }
+        })();
+      });
+    </script>
+  </body>
+</html>
