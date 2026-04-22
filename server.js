@@ -1,7 +1,4 @@
 require("dotenv").config();
-require("./config/passport");
-require("winston-mongodb");
-const { error } = require("console");
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
@@ -12,9 +9,11 @@ const productRoutes = require("./routes/products");
 const cartRoutes = require("./routes/cart");
 const orderRoutes = require("./routes/orders");
 const cors = require("cors");
-
+const passport = require("./config/passport");
 const winston = require("winston");
-const path = require("path");
+
+require("./config/passport");
+require("winston-mongodb");
 
 const logger = winston.createLogger({
   level: "info",
@@ -51,7 +50,7 @@ process.on("unhandledRejection", (err) => {
 
 mongoose
   .connect("mongodb://localhost:27017/myStore")
-  .then(() => logger.info("MongoDB Connected Succefully"))
+  .then(() => logger.info("MongoDB Connected Successfully"))
   .catch((err) => {
     logger.error("MongoDB connection failed", err);
     logger.on("finish", () => {
@@ -63,6 +62,8 @@ app.use(cors());
 app.use(express.json());
 app.use("/upload/category", express.static("upload/category"));
 app.use("/upload/products", express.static("upload/products"));
+
+app.use(passport.initialize());
 
 app.use("/api/user", userRoutes);
 app.use("/api/auth", authRoutes);

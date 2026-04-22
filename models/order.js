@@ -17,11 +17,11 @@ const orderSchema = new mongoose.Schema({
   paymentId: { type: String, require: true },
   orderStatus: {
     type: String,
-    enum: ["pending", "processing", "shipped", "deleverd", "cancelled"],
+    enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
     default: "pending",
   },
   createdAt: { type: Date, default: Date.now() },
-  deleveredAt: { type: Date },
+  deliveredAt: { type: Date },
 });
 const Order = mongoose.model("Order", orderSchema);
 module.exports = Order;

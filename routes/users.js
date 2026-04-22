@@ -6,85 +6,113 @@ const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const authMiddleware = require("../middlewares/auth");
 
+// ─── VALIDATION SCHEMA ───
 const createUserSchema = Joi.object({
   name: Joi.string().min(3).required(),
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
-  deleveryAddress: Joi.string().min(5).required(),
+  deliveryAddress: Joi.string().min(5).required(),
 });
 
+// ─── HELPER FUNCTION ───
+const generateToken = (data) => {
+  return jwt.sign(data, process.env.JWT_KEY, { expiresIn: "2h" }); // ✅ Added expiration
+};
+
+// ─── REGISTER ───
 router.post("/newUser", async (req, res) => {
-  const { name, email, password, deleveryAddress } = req.body;
+  try {
+    // ✅ Added try-catch
+    const { name, email, password, deliveryAddress } = req.body;
 
-  const joiValidation = createUserSchema.validate(req.body);
-  if (joiValidation.error) {
-    return res.status(400).json({ message: joiValidation.error.details[0].message });
+    // Validate input
+    const { error } = createUserSchema.validate(req.body); // ✅ Cleaner destructuring
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email }); // ✅ Cleaner shorthand
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" }); // ✅ Fixed typo
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10); // ✅ Better variable name
+
+    // Create new user
+    const newUser = new User({
+      name, // ✅ ES6 shorthand
+      email,
+      password: hashedPassword,
+      deliveryAddress,
+    });
+
+    await newUser.save();
+
+    // Generate token & respond
+    const token = generateToken({
+      _id: newUser._id,
+      name: newUser.name,
+      role: newUser.role,
+    });
+
+    res.status(201).json({ token }); // ✅ Wrapped in object
+  } catch (err) {
+    // ✅ Error handled
+    res.status(500).json({ message: "Server error" });
   }
-
-  const user = await User.findOne({ email: email });
-  if (user) {
-    return res.status(400).json({ message: "User is already exist" });
-  }
-  const hashPass = await bcrypt.hash(password, 10);
-  const newUser = new User({
-    name: name,
-    email: email,
-    password: hashPass,
-    deleveryAddress: deleveryAddress,
-  });
-
-  await newUser.save();
-  //   console.log(newUser);
-
-  const token = generateToken({
-    _id: newUser._id,
-    name: newUser.name,
-    role: newUser.role,
-  });
-  res.status(201).json(token);
 });
+
+// ─── LOGIN ───
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email: email }).select("+password");
+    // Find user with password
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
+
+    // Check if user registered with social login (no password)
     if (!user.password) {
-      return res.status(500).json({ message: "Password not found in database" });
+      return res.status(400).json({
+        // ✅ Changed from 500 to 400
+        message: "Please login with Google or Facebook", // ✅ Better message
+      });
     }
+
+    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Invalid email or password" }); // ✅ Changed to 401
     }
+
+    // Generate token & respond
     const token = generateToken({
       _id: user._id,
       name: user.name,
       role: user.role,
     });
-    res.json(token);
 
-    // const { password: _, ...userWithoutPassword } = user.toObject();
-    // res.status(200).json({
-    //   message: "Login successful",
-    //   user: userWithoutPassword,
-    //   token,
-    // });
+    res.status(200).json({ token }); // ✅ Added status 200 & wrapped in object
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
-router.get("/", authMiddleware, async (req, res) => {
-  // const user = req.user;
-  const user = await User.findById(req.user._id);
-  res.json(user);
+
+// ─── GET CURRENT USER ───
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" }); // ✅ Handle not found
+    }
+    res.status(200).json({ user }); // ✅ Wrapped in object
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
-const generateToken = (data) => {
-  return jwt.sign(data, process.env.JWT_KEY);
-};
-//don't forget to make the token expired
-// { expiresIn: "2h",  }
 
 module.exports = router;

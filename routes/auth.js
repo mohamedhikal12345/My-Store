@@ -13,11 +13,20 @@ router.get(
   }),
   async (req, res) => {
     // check user is available or not using google id or email
-    const profile = req.user;
-    const token = await handleOAuthCallback(profile, "googleId");
 
-    res.redirect(`http://localhost:5173/dashboard?token= ${token}`);
-  }
+    try {
+      const profile = req.user;
+      const token = await handleOAuthCallback(profile, "googleId");
+
+      res.json({
+        message: "Google Login Success! ✅",
+        token: token,
+      });
+      // res.redirect(`http://localhost:5173/dashboard?token=${token}`);
+    } catch (err) {
+      res.redirect("http://localhost:5173/login?error=auth_failed");
+    }
+  },
 );
 
 router.get("/facebook", passport.authenticate("facebook", { scope: ["public_profile", "email"] }));
@@ -30,39 +39,50 @@ router.get(
   }),
   async (req, res) => {
     // check user is available or not using google id or email
-    const profile = req.user;
+    try {
+      const profile = req.user;
 
-    const token = await handleOAuthCallback(profile, "facebookId");
+      const token = await handleOAuthCallback(profile, "facebookId");
 
-    // res.json(token);
-    res.redirect(`http://localhost:5173/dashboard?token= ${token}`);
-  }
+      res.json({
+        message: "Facebook Login Success! ✅",
+        token: token,
+      });
+      // res.redirect(`http://localhost:5173/dashboard?token=${token}`);
+    } catch (err) {
+      res.redirect("http://localhost:5173/login?error=auth_failed");
+    }
+  },
 );
 
 const handleOAuthCallback = async (profile, providerId) => {
-  let user = await User.findBy({
-    $or: [{ [providerId]: profile.id }, { email: profile.emails[0].value }],
-  });
-  // if user is  available -update google id & generate gwt token and send it in the res
-  if (user) {
-    if (user[providerId] !== profile.id) {
-      user[providerId] = profile.id;
+  try {
+    let user = await User.findOne({
+      $or: [{ [providerId]: profile.id }, { email: profile.emails[0].value }],
+    });
+    // if user is  available -update google id & generate gwt token and send it in the res
+    if (user) {
+      if (user[providerId] !== profile.id) {
+        user[providerId] = profile.id;
+        await user.save();
+      }
+    } else {
+      //User is not available - create new user & generate gwt token and send it in res
+      user = new User({
+        name: profile.displayName,
+        email: profile.emails[0].value,
+        [providerId]: profile.id,
+      });
+
       await user.save();
     }
-  } else {
-    //User is not available - create new user & generete gwt token and send it in res
-    user = new User({
-      name: profile.displayName,
-      email: profile.emails[0].value,
-      [providerId]: profile.id,
+    const token = jwt.sign({ _id: user._id, name: user.name, role: user.role }, process.env.JWT_KEY, {
+      expiresIn: "2h",
     });
-
-    await user.save();
+    return token;
+    // res.json(token);
+  } catch (err) {
+    throw new Error(err.message);
   }
-  const token = jwt.sign({ _id: user._id, name: user.name, role: user.role }, process.env.JWT_KEY, {
-    expiresIn: "2h",
-  });
-  return token;
-  // res.json(token);
 };
 module.exports = router;

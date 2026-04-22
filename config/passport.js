@@ -13,8 +13,8 @@ passport.use(
     },
     function (request, accessToken, refreshToken, profile, done) {
       return done(null, profile);
-    }
-  )
+    },
+  ),
 );
 passport.use(
   new FacebookStrategy(
@@ -23,18 +23,12 @@ passport.use(
       clientSecret: process.env.FACEBOOK_APP_SECRET,
       callbackURL: "http://localhost:3000/api/auth/facebook/callback",
       passReqToCallback: true,
-      profileFields: [
-        "id",
-        "emails",
-        "name",
-        "displayName",
-        "picture.type(large)",
-      ],
+      profileFields: ["id", "emails", "name", "displayName", "picture.type(large)"],
     },
     function (request, accessToken, refreshToken, profile, done) {
       return done(null, profile);
-    }
-  )
+    },
+  ),
 );
 
 module.exports = passport;

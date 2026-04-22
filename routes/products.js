@@ -84,13 +84,13 @@ router.get("/", async (req, res) => {
 
     const updatedProducts = products.map((product) => {
       const sumOfRating = product.review.reduce((sum, review) => sum + review.rating, 0);
-      const numberOfRevews = product.review.length;
-      const averageRating = sumOfRating / (numberOfRevews || 1);
+      const numberOfReviews = product.review.length;
+      const averageRating = sumOfRating / (numberOfReviews || 1);
 
       return {
         ...product,
         images: product.images[0],
-        review: { numberOfRevews, averageRating },
+        review: { numberOfReviews, averageRating },
       };
     });
 
