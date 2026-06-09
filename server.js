@@ -73,7 +73,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/order", orderRoutes);
 
 app.use((error, req, res, next) => {
-  console.log("Error middleware is running");
+  console.log(error);
   logger.error(error.message, {
     method: req.method,
     path: req.originalUrl,
